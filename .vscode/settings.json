@@ -1,0 +1,9 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "cmake": true,
+        "/^cd /d/xcyxiner/qscan && mkdir -p docs/solutions/integration-issues$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

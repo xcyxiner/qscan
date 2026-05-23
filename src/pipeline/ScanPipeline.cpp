@@ -16,6 +16,11 @@ public:
         connect(&m_device, &MockScannerDevice::frameGenerated, this, &PipelineWorker::processFrame);
     }
 
+    void moveOwnedObjectsToThread(QThread *targetThread)
+    {
+        m_device.moveToThread(targetThread);
+    }
+
 public slots:
     void start()
     {
@@ -82,6 +87,7 @@ ScanPipeline::ScanPipeline(QObject *parent)
     m_worker->moveToThread(m_workerThread);
 
     auto *typedWorker = static_cast<PipelineWorker *>(m_worker);
+    typedWorker->moveOwnedObjectsToThread(m_workerThread);
 
     connect(m_workerThread, &QThread::finished, m_worker, &QObject::deleteLater);
     connect(this, &ScanPipeline::startRequested, typedWorker, &PipelineWorker::start);

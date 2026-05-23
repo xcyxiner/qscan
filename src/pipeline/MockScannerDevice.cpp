@@ -1,5 +1,7 @@
 #include "pipeline/MockScannerDevice.h"
 
+#include <QMetaObject>
+#include <QThread>
 #include <QTimer>
 
 #include <algorithm>
@@ -13,16 +15,27 @@ constexpr int kFrameIntervalMs = 50;
 
 MockScannerDevice::MockScannerDevice(QObject *parent)
     : QObject(parent)
-    , m_timer(new QTimer(this))
 {
-    m_timer->setInterval(kFrameIntervalMs);
-    connect(m_timer, &QTimer::timeout, this, &MockScannerDevice::generateFrame);
 }
 
 bool MockScannerDevice::start()
 {
+    if (QThread::currentThread() != thread()) {
+        bool started = false;
+        QMetaObject::invokeMethod(this, [this, &started]() {
+            started = start();
+        }, Qt::BlockingQueuedConnection);
+        return started;
+    }
+
     if (m_isStreaming) {
         return false;
+    }
+
+    if (m_timer == nullptr) {
+        m_timer = new QTimer(this);
+        m_timer->setInterval(kFrameIntervalMs);
+        connect(m_timer, &QTimer::timeout, this, &MockScannerDevice::generateFrame);
     }
 
     m_isStreaming = true;
@@ -34,11 +47,21 @@ bool MockScannerDevice::start()
 
 bool MockScannerDevice::stop()
 {
+    if (QThread::currentThread() != thread()) {
+        bool stopped = false;
+        QMetaObject::invokeMethod(this, [this, &stopped]() {
+            stopped = stop();
+        }, Qt::BlockingQueuedConnection);
+        return stopped;
+    }
+
     if (!m_isStreaming) {
         return false;
     }
 
-    m_timer->stop();
+    if (m_timer != nullptr) {
+        m_timer->stop();
+    }
     m_isStreaming = false;
     emit streamingChanged(false);
     return true;
